@@ -1,3 +1,0 @@
-/home/ahziel/Documents/ESIR/ESIR3/VO/tp-etudiants/tp-build/CMakeFiles/edit_cache.dir
-/home/ahziel/Documents/ESIR/ESIR3/VO/tp-etudiants/tp-build/CMakeFiles/rebuild_cache.dir
-/home/ahziel/Documents/ESIR/ESIR3/VO/tp-etudiants/tp-build/CMakeFiles/eigenfaces.dir
