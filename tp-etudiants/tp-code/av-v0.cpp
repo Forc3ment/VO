@@ -552,7 +552,7 @@ tp3DVisualServoing()
         computeError3D(cdTc, e) ;
 
         // Calcul de la matrice d'interaction
-        computeInteractionMatrix3D(cTw, Lx) ;
+        computeInteractionMatrix3D(cdTc, Lx) ;
     	cout << "toto" << endl;
 
 		// Calcul de la loi de commande
@@ -574,7 +574,6 @@ tp3DVisualServoing()
 
 
     }
-cout << "test" << endl;
 	// sauvegarde des courbes
     plot.saveData(0,"e.txt","#");
     plot.saveData(1,"error.txt","#");
@@ -621,11 +620,12 @@ tp2DVisualServoingFourPointMvt()
 
 
     //positions initiale (à tester)
-    vpHomogeneousMatrix cTw (-0.2, -0.1, 1.3, vpMath::rad(10), vpMath::rad(20), vpMath::rad(30) ) ;
+    //vpHomogeneousMatrix cTw (-0.2, -0.1, 1.3, vpMath::rad(10), vpMath::rad(20), vpMath::rad(30) ) ;
     //  vpHomogeneousMatrix cTw (0.2,0.1,1.3,  0,0,vpMath::rad(5)) ;
-    //   vpHomogeneousMatrix cTw (0,0,1,  0,0,vpMath::rad(45)) ;
+    //vpHomogeneousMatrix cTw (0,0,1,  0,0,vpMath::rad(45)) ;
     //vpHomogeneousMatrix cTw (0, 0, 1,  0, 0, vpMath::rad(90)) ;
     //vpHomogeneousMatrix cTw (0, 0, 1,  0, 0, vpMath::rad(180)) ;
+    vpHomogeneousMatrix cTw (0,0,1,  0,0,0) ;
 
     // position finale
     vpHomogeneousMatrix cdTw (0,0,1,  0,0,0) ;
@@ -696,15 +696,13 @@ tp2DVisualServoingFourPointMvt()
     int iter = 0 ;
 
 
-    while (fabs(e.sumSquare()) > 1e-16)
+    while (1)//fabs(e.sumSquare()) > 1e-16)
     {
-
-    	for (int i = 0 ; i < 4 ; i++) wX[i][0] += 0.1 ;
+    	for (int i = 0 ; i < 4 ; i++) wX[i][0] += 0.01 ;
 
         // calcul de la position des points dans l'image en fonction de cTw
     	for (int i = 0; i < 4; ++i)
     	{
-
     		vpColVector temp(2);
     		changeFrame(wX[i] ,cTw ,cX[i]);
  
@@ -970,8 +968,8 @@ int main(int argc, char** argv)
 {
 
     //tp2DVisualServoingOnePoint() ;
-    //tp2DVisualServoingFourPoint() ;
+    tp2DVisualServoingFourPoint() ;
     //tp3DVisualServoing() ;
-    tp2DVisualServoingFourPointMvt() ;
+    //tp2DVisualServoingFourPointMvt() ;
 
 }
