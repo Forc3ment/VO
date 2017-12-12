@@ -115,7 +115,7 @@ vpColVector computeMeanFaces(const vpMatrix & I, bool display, int displayNumber
 
     for(int pointBit = 0; pointBit < I.getRows(); pointBit++)
     {
-        temp5.bitmap[pointBit] = abs(I[pointBit][displayNumber] - meanFace[pointBit]);
+        temp5.bitmap[pointBit] = I[pointBit][displayNumber] - meanFace[pointBit];
     }
 
     vpImageConvert::convert(temp5, temp6);
@@ -188,45 +188,159 @@ vpColVector computeReconstruction(const vpMatrix & U, const vpColVector & meanFa
     }
     vpColVector Jp = meanFace + Wkuk;
 
-    vpImage<double> temp1(imgHeight,imgWidth);
-    vpImage<unsigned char> temp2;
+    // vpImage<double> temp1(imgHeight,imgWidth);
+    // vpImage<unsigned char> temp2;
 
-    for(int i = 0; i < U.getRows(); i++)
-    {
-        temp1.bitmap[i] = Jp[i];
-    }
+    // for(int i = 0; i < U.getRows(); i++)
+    // {
+    //     temp1.bitmap[i] = Jp[i];
+    // }
 
-    vpImageConvert::convert(temp1, temp2);
+    //vpImageConvert::convert(temp1, temp2);
         
-    ofstream fichier("../result/Wk.txt", ios::out | ios::app);  
-    if(fichier)
-    {
-        fichier << Wk << "\n" << endl;
-        fichier.close();
-    }
-    vpImageIo::write(temp2,"../result/reconstructedFace"+folderName+"_"+imgNumber+"_k"+k+".pgm");
-    if(display)
-    {
-        vpDisplayX d3(temp2);
-        vpDisplay::display(temp2);
-        vpDisplay::flush(temp2);
-        vpDisplay::getClick(temp2);
-    }
+    // ofstream fichier("../result/Wk.txt", ios::out | ios::app);  
+    // if(fichier)
+    // {
+    //     fichier << Wk << "\n" << endl;
+    //     fichier.close();
+    // }
+    //vpImageIo::write(temp2,"../result/reconstructedFace"+folderName+"_"+imgNumber+"_k"+k+".pgm");
+    // if(display)
+    // {
+    //     vpDisplayX d3(temp2);
+    //     vpDisplay::display(temp2);
+    //     vpDisplay::flush(temp2);
+    //     vpDisplay::getClick(temp2);
+    // }
 
     return Jp;
 }
 
 double computeReconstructionError(const vpColVector & J, const vpColVector & Jp)
-{
-    ofstream fichier("../result/reconstructionError.csv", ios::out | ios::app);  //déclaration du flux et ouverture du fichier
-    
-    double toto = sqrt((J-Jp).sumSquare());
-
-    if(fichier)
+{    
+    //double toto = sqrt((J-Jp).sumSquare());
+    double toto = 0;
+    for (int i = 0; i < Jp.size(); ++i)
     {
-        fichier << toto << endl;
+        toto += (J[i] - Jp[i]) * (J[i] - Jp[i]);
     }
-    return toto;
+
+    return sqrt(toto);
+}
+
+void identify(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVector meanFace, int k, string fileName)
+{
+    vpImage<unsigned char> img;
+
+    vpImageIo::read(img,fileName);    
+    vpDisplayX d(img);
+    vpDisplay::display(img);
+    vpDisplay::flush(img);
+    vpDisplay::getClick(img);
+
+    int size = img.getWidth() * img.getHeight();
+    vpColVector JToIdentify(size);
+
+    for (int j = 0; j < size; ++j)
+    {
+        JToIdentify[j] = (double)(img.bitmap[j])/255;
+    }
+
+    vpColVector Wk = computeWk(JToIdentify,U,meanFace,k);
+
+    int counter2 = 0;
+    double min = 99999;
+    int saveFileNum, savePicNum;
+
+    double error;
+
+    for(int fileNum = 0; fileNum < 40; fileNum++)
+    {
+       for(int picNum = 0; picNum < 5; picNum++)
+        {
+            error = computeReconstructionError(wkRef[counter2],Wk);
+            if(error < min)
+            {
+                min = error;
+                saveFileNum = fileNum;
+                savePicNum = picNum;
+            }
+
+            counter2++;
+        }
+    }
+
+    vpImage<unsigned char> img2;
+    string fileNameBis = "../faces/s" + toString(saveFileNum+1) +"/" + toString(savePicNum+1) +".pgm";
+    vpImageIo::read(img2,fileNameBis);
+
+    vpDisplayX d3(img2);
+    vpDisplay::display(img2);
+    vpDisplay::flush(img2);
+    vpDisplay::getClick(img2);
+}
+
+void identifyAll(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVector meanFace, int k)
+{
+    vpImage<unsigned char> img;
+    vpImage<double> error(wkRef[1].size(),wkRef[1].size());
+    int counter1 = 0;
+    int sum =0;
+
+    for(int fileNum = 0; fileNum < 40; fileNum++)
+    {
+        for(int picNum = 5; picNum < 10; picNum++)
+        {
+            string fileName = "../faces/s" + toString(fileNum+1) +"/" + toString(picNum+1) +".pgm";
+            vpImageIo::read(img,fileName);
+
+            int size = img.getWidth() * img.getHeight();
+
+            vpColVector JToIdentify(size);
+
+            for (int j = 0; j < size; ++j)
+            {
+                JToIdentify[j] = (double)(img.bitmap[j])/255;
+            }
+
+            vpColVector Wk = computeWk(JToIdentify,U,meanFace,k);
+
+            int counter2 = 0;
+            double minInter = 999999;
+            double minExter = 999999;
+
+            for(int fileNum2 = 0; fileNum2 < 40; fileNum2++)
+            {
+                for(int picNum2 = 0; picNum2 < 5; picNum2++)
+                {
+                    error[counter1][counter2] = computeReconstructionError(wkRef[counter2],Wk);
+                    if(fileNum == fileNum2)
+                    {
+                        minInter = min(minInter, error[counter1][counter2]);
+                    }
+                    else
+                    {
+                        minExter = min(minExter, error[counter1][counter2]);
+                    }
+
+                    counter2++;
+                }
+            }
+            ofstream fichier("../result/identification.csv", ios::out | ios::app);  //déclaration du flux et ouverture du fichier
+            if(fichier)
+            {
+                int id = (minInter < minExter) ? 1 : 0;
+                sum += id;
+                fichier << id << endl;
+            }
+            counter1++;
+        }
+    }
+    vpImage<unsigned char> errorUC;
+    vpImageConvert::convert(error, errorUC);
+    vpImageIo::write(errorUC,"../result/error.pgm");
+
+    cout << sum << endl;
 }
 
 
@@ -253,7 +367,6 @@ int main(int argc, char** argv)
             for(int pointBit = 0; pointBit < size; pointBit++)
             {
                 I[pointBit][count] = (double)(img.bitmap[pointBit])/255;
-
             }
             count++;
         }
@@ -271,68 +384,74 @@ int main(int argc, char** argv)
     U.svd(w, V);
     cout << "-------  END SVD  -------" << endl;
 
-    saveEigenFaces(U,w,200);
+    //saveEigenFaces(U,w,200);
 
-    cout << "------- Start Reconstruction -------" << endl;
+    cout << "------- Start Construction of the base -------" << endl;
 
     int fileNum = 0;
     int picNum = 0;
     int counter1 = 0;
     int counter2 = 0;
+    int counter3 = 0;
 
-    vpImage<double> error(nbImg,nbImg);
+    
+    vector<vpColVector> wkRef;
 
-    for (k = 100; k <= 100; k++)
+    for(int fileNum2 = 0; fileNum2 < 40; fileNum2++)
     {
-        for(fileNum = 0; fileNum < 40; fileNum++)
+        for(int picNum2 = 0; picNum2 < 5; picNum2++)
         {
-            for(picNum = 5; picNum < 10; picNum++)
+            fileName = "../faces/s" + toString(fileNum2+1) +"/" + toString(picNum2+1) +".pgm";
+            vpImageIo::read(img,fileName);
+            vpColVector Jref(size);
+
+            for (int j = 0; j < size; ++j)
             {
-                vpColVector J(size);
-
-                fileName = "../faces/s" + toString(fileNum+1) +"/" + toString(picNum+1) +".pgm";
-                vpImageIo::read(img,fileName);
-
-                for (int j = 0; j < size; ++j)
-                {
-                    J[j] = (double)(img.bitmap[j])/255;
-                }
-
-                vpColVector Wk = computeWk(J,U,meanFace,k);
-
-                vpColVector Jp = computeReconstruction(U,meanFace,Wk,"s" + toString(fileNum+1),toString(picNum+1),toString(k));
-
-                counter2 = 0;
-                for(int fileNum2 = 0; fileNum2 < 40; fileNum2++)
-                {
-                    for(int picNum2 = 0; picNum2 < 5; picNum2++)
-                    {
-                        fileName = "../faces/s" + toString(fileNum2+1) +"/" + toString(picNum2+1) +".pgm";
-                        vpImageIo::read(img,fileName);
-
-                        for (int j = 0; j < size; ++j)
-                        {
-                            J[j] = (double)(img.bitmap[j])/255;
-                        }
-
-                        error[counter1][counter2] = computeReconstructionError(J,Jp);
-                        counter2++;
-                    }
-                }
-                counter1++;
+                Jref[j] = (double)(img.bitmap[j])/255;
             }
+
+            wkRef.push_back(computeWk(Jref,U,meanFace,k));
         }
     }
 
-    vpImage<unsigned char> errorUC;
-    vpImageConvert::convert(error, errorUC);
-    vpDisplayX d(errorUC);
-    vpDisplay::display(errorUC);
-    vpDisplay::flush(errorUC);
-    vpDisplay::getClick(errorUC);
+    cout << "-------  END of the construction -------" << endl;
 
-    vpImageIo::write(errorUC,"../result/error.pgm");
+    int a = 0;
 
-    cout << "-------  END Reconstruction  -------" << endl;
+    while(a >= 0)
+    {
+        cout << "1 :  Identify All"<< endl;
+        cout << "2 :  Identify One"<< endl;
+        cout << "3 :  Change K"<< endl;
+        cout << "k = " << k << endl;
+        cout << endl;
+        cout << "What do you want to do ?"<< endl;
+        cout << endl;
+        cin >> a;
+
+       switch (a)
+        {
+            case 1 :
+                identifyAll(wkRef, U, meanFace, k);
+                break;
+            case 2 :
+                cout << "Enter a picture location."<< endl;
+                cin >> fileName;
+                //fileName = "../faces/s11/8.pgm";
+                identify(wkRef, U, meanFace, k, fileName);
+                break;
+            case 3 : 
+                cout << "Enter a value for k."<< endl;
+                cin >> k;
+                break;
+            default:
+                cout << "Wrong proposition."<< endl;
+                break;
+        }
+        cout << "-----------------------------------------------------"<< endl; 
+    }
+    
+    
+    
     
 }
