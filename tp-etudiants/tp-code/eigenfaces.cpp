@@ -2,6 +2,7 @@
 
 #include <string>
 #include <fstream>
+#include <ctime>
 
 //! \example tutorial-viewer.cpp
 //! [Include display]
@@ -241,6 +242,8 @@ void identify(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVect
     int size = img.getWidth() * img.getHeight();
     vpColVector JToIdentify(size);
 
+    clock_t begin_time = clock();
+
     for (int j = 0; j < size; ++j)
     {
         JToIdentify[j] = (double)(img.bitmap[j])/255;
@@ -270,6 +273,8 @@ void identify(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVect
         }
     }
 
+    cout << "Computation time : " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << "sec" << endl;
+
     vpImage<unsigned char> img2;
     string fileNameBis = "../faces/s" + toString(saveFileNum+1) +"/" + toString(savePicNum+1) +".pgm";
     vpImageIo::read(img2,fileNameBis);
@@ -280,12 +285,19 @@ void identify(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVect
     vpDisplay::getClick(img2);
 }
 
-void identifyAll(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVector meanFace, int k)
+int identifyAll(const vector<vpColVector> wkRef, const vpMatrix U, const vpColVector meanFace, int k)
 {
     vpImage<unsigned char> img;
     vpImage<double> error(wkRef[1].size(),wkRef[1].size());
     int counter1 = 0;
     int sum =0;
+
+    double minInterBis = 999999;
+    double minExterBis = 999999;
+    double maxInter = 0;
+    double maxExter = 0;
+
+    cout << "---------------- " << k << " ----------------" << endl;
 
     for(int fileNum = 0; fileNum < 40; fileNum++)
     {
@@ -317,10 +329,14 @@ void identifyAll(const vector<vpColVector> wkRef, const vpMatrix U, const vpColV
                     if(fileNum == fileNum2)
                     {
                         minInter = min(minInter, error[counter1][counter2]);
+                        minInterBis = min(minInterBis, error[counter1][counter2]);
+                        maxInter = max(maxInter, error[counter1][counter2]);
                     }
                     else
                     {
                         minExter = min(minExter, error[counter1][counter2]);
+                        minExterBis = min(minExterBis, error[counter1][counter2]);
+                        maxExter = max(maxExter, error[counter1][counter2]);
                     }
 
                     counter2++;
@@ -335,12 +351,22 @@ void identifyAll(const vector<vpColVector> wkRef, const vpMatrix U, const vpColV
             }
             counter1++;
         }
+
     }
+
+    cout << "Distance minimum inter classe : " << minInterBis << ", Distance maximum inter classe : " << maxInter << endl;
+    cout << "Distance minimum extra classe : " << minExterBis << ", Distance maximum extra classe : " << maxExter << endl;
+    
     vpImage<unsigned char> errorUC;
     vpImageConvert::convert(error, errorUC);
     vpImageIo::write(errorUC,"../result/error.pgm");
 
-    cout << sum << endl;
+    ofstream fichier("../result/sumId.csv", ios::out | ios::app);  //déclaration du flux et ouverture du fichier
+    if(fichier)
+    {
+        fichier << sum << endl;
+    }
+    cout << sum << "\n" << endl;
 }
 
 
@@ -427,6 +453,7 @@ int main(int argc, char** argv)
         cout << endl;
         cout << "What do you want to do ?"<< endl;
         cout << endl;
+
         cin >> a;
 
        switch (a)
@@ -436,13 +463,19 @@ int main(int argc, char** argv)
                 break;
             case 2 :
                 cout << "Enter a picture location."<< endl;
-                cin >> fileName;
-                //fileName = "../faces/s11/8.pgm";
+                //cin >> fileName;
+                fileName = "../faces/s10/7.pgm";
                 identify(wkRef, U, meanFace, k, fileName);
                 break;
             case 3 : 
                 cout << "Enter a value for k."<< endl;
                 cin >> k;
+                break;
+            case 4 : 
+                for (int k = 0; k < 200; ++k)
+                {
+                    identifyAll(wkRef, U, meanFace, k);
+                }
                 break;
             default:
                 cout << "Wrong proposition."<< endl;

@@ -620,12 +620,12 @@ tp2DVisualServoingFourPointMvt()
 
 
     //positions initiale (à tester)
-    //vpHomogeneousMatrix cTw (-0.2, -0.1, 1.3, vpMath::rad(10), vpMath::rad(20), vpMath::rad(30) ) ;
+    vpHomogeneousMatrix cTw (-0.2, -0.1, 1.3, vpMath::rad(10), vpMath::rad(20), vpMath::rad(30) ) ;
     //  vpHomogeneousMatrix cTw (0.2,0.1,1.3,  0,0,vpMath::rad(5)) ;
     //vpHomogeneousMatrix cTw (0,0,1,  0,0,vpMath::rad(45)) ;
     //vpHomogeneousMatrix cTw (0, 0, 1,  0, 0, vpMath::rad(90)) ;
     //vpHomogeneousMatrix cTw (0, 0, 1,  0, 0, vpMath::rad(180)) ;
-    vpHomogeneousMatrix cTw (0,0,1,  0,0,0) ;
+    //vpHomogeneousMatrix cTw (0,0,1,  0,0,0) ;
 
     // position finale
     vpHomogeneousMatrix cdTw (0,0,1,  0,0,0) ;
@@ -695,10 +695,10 @@ tp2DVisualServoingFourPointMvt()
     double lambda = 0.1 ;
     int iter = 0 ;
 
-
-    while (1)//fabs(e.sumSquare()) > 1e-16)
+    int count = 0;
+    while (count < 300)//fabs(e.sumSquare()) > 1e-16)
     {
-    	for (int i = 0 ; i < 4 ; i++) wX[i][0] += 0.01 ;
+    	for (int i = 0 ; i < 4 ; i++) wX[i][0] += 1 ;
 
         // calcul de la position des points dans l'image en fonction de cTw
     	for (int i = 0; i < 4; ++i)
@@ -717,7 +717,7 @@ tp2DVisualServoingFourPointMvt()
 
 		// ----- Lx|x=x(t) ----- //
 
-        // Calcul de la matrice d'interaction
+        //Calcul de la matrice d'interaction
 		// for (int k = 0; k < 4; ++k)
 		// {
 			
@@ -757,6 +757,7 @@ tp2DVisualServoingFourPointMvt()
         //mise a jour de l'image
         display(cam,I,x,xd) ;
         //vpDisplay::getClick(I) ;
+        count++;
 
     }
 
@@ -968,8 +969,8 @@ int main(int argc, char** argv)
 {
 
     //tp2DVisualServoingOnePoint() ;
-    tp2DVisualServoingFourPoint() ;
+    //tp2DVisualServoingFourPoint() ;
     //tp3DVisualServoing() ;
-    //tp2DVisualServoingFourPointMvt() ;
+    tp2DVisualServoingFourPointMvt() ;
 
 }
